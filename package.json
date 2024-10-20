@@ -1,0 +1,18 @@
+{
+  "dependencies": {
+    "@thai/html": "npm:@jsr/thai__html",
+    "csv": "^6.3.10",
+    "diff-sequences": "^29.6.3"
+  },
+  "devDependencies": {
+    "@tsconfig/bun": "^1.0.7",
+    "@types/bun": "latest",
+    "@types/node": "^22.7.7"
+  },
+  "name": "sub-align",
+  "module": "index.ts",
+  "type": "module",
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
