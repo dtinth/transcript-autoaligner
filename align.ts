@@ -27,6 +27,7 @@ interface TranscriptWord {
     start: number;
     end: number;
     exact: boolean;
+    index: number;
   };
 }
 
@@ -37,7 +38,8 @@ const toWords = (text: string) =>
     new Intl.Segmenter("th", { granularity: "word" }).segment(text)
   ).filter((s) => s.isWordLike);
 
-const asrWords: { word: string; start: number; end: number }[] = [];
+const asrWords: { word: string; start: number; end: number; index: number }[] =
+  [];
 const outputRows: { words: TranscriptWord[]; text: string }[] = [];
 for (const [col] of rows) {
   if (!col?.trim()) {
@@ -65,7 +67,7 @@ for (const result of asr.results) {
     const end =
       result.start_time +
       ((i + 1) / words.length) * (result.end_time - result.start_time);
-    asrWords.push({ word, start, end });
+    asrWords.push({ word, start, end, index: asrWords.length });
   }
 }
 
@@ -107,10 +109,12 @@ for (const group of groups) {
     // t is a fraction of the way through the group, from 0 to group.fromAsr.length
     const index = Math.min(Math.floor(t), group.fromAsr.length - 1);
     const fraction = t - index;
-    return (
-      group.fromAsr[index].start +
-      fraction * (group.fromAsr[index].end - group.fromAsr[index].start)
-    );
+    return {
+      time:
+        group.fromAsr[index].start +
+        fraction * (group.fromAsr[index].end - group.fromAsr[index].start),
+      index: group.fromAsr[index].index,
+    };
   };
   // Interpolate the timing from ASR into the transcript.
   for (const [i, word] of group.fromTranscript.entries()) {
@@ -118,10 +122,15 @@ for (const group of groups) {
       (i * group.fromAsr.length) / group.fromTranscript.length;
     const scaledQuarter =
       ((i + 0.25) * group.fromAsr.length) / group.fromTranscript.length;
-    const start = resolveTime(scaledStart);
-    const quarter = resolveTime(scaledQuarter);
+    const { time: start, index } = resolveTime(scaledStart);
+    const { time: quarter } = resolveTime(scaledQuarter);
     const duration = (quarter - start) * 4;
-    word.alignment = { start, end: start + duration, exact: group.aligned };
+    word.alignment = {
+      start,
+      end: start + duration,
+      exact: group.aligned,
+      index,
+    };
   }
 }
 
@@ -201,6 +210,14 @@ Bun.write(
         </details>
         <h1>Alignment result</h1>
         <table>
+          <thead>
+            <tr>
+              <th>Transcript</th>
+              <th nowrap align="right">Start time</th>
+              <th nowrap align="right">End time</th>
+              <th style="padding-left: 1ch">Aligned words</th>
+            </tr>
+          </thead>
           ${outputRows.map((row) => {
             const alignedWords = row.words.filter((word) => word.alignment);
             const start = Math.min(
@@ -209,6 +226,14 @@ Bun.write(
             const end = Math.max(
               ...alignedWords.map((word) => word.alignment!.end)
             );
+            const startIndex = Math.min(
+              ...alignedWords.map((word) => word.alignment!.index)
+            );
+            const endIndex = Math.max(
+              ...alignedWords.map((word) => word.alignment!.index)
+            );
+            const usedWords = asrWords.slice(startIndex, endIndex + 1);
+            const words = usedWords.map((word) => word.word).join(" ");
             const codes = [...row.text] as Html[];
             for (const word of row.words) {
               const startIndex = word.index;
@@ -225,8 +250,9 @@ Bun.write(
             return html`
               <tr data-words="${JSON.stringify(row.words)}">
                 <td style="white-space:pre-wrap">${codes.filter((x) => x)}</td>
-                <td>${start.toFixed(2)}s</td>
-                <td>${end.toFixed(2)}s</td>
+                <td align="right">${start.toFixed(2)}s</td>
+                <td align="right">${end.toFixed(2)}s</td>
+                <td style="padding-left: 1ch">${words}</td>
               </tr>
             `;
           })}
