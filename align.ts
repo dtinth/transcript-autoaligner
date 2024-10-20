@@ -213,9 +213,13 @@ Bun.write(
           <thead>
             <tr>
               <th>Transcript</th>
-              <th nowrap align="right">Start time</th>
-              <th nowrap align="right">End time</th>
-              <th style="padding-left: 1ch">Aligned words</th>
+              <th nowrap style="text-align: right; padding-left :1ch">
+                Start time
+              </th>
+              <th nowrap style="text-align: right; padding-left :1ch">
+                End time
+              </th>
+              <th style="padding-left: 1ch">Alignment source</th>
             </tr>
           </thead>
           ${outputRows.map((row) => {
