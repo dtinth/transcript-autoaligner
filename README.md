@@ -2,6 +2,8 @@
 
 **transcript-autoaligner** is a tool for aligning a manually edited transcript (without timing information) with the results of Automatic Speech Recognition (ASR) from Speechmatics to generate accurate, timed subtitles.
 
+![](https://im.dt.in.th/ipfs/bafybeigqnjl7ix5s6rtu7nppglzixl24h2reyswinjixjwcis3tq4vl2a4/image.webp)
+
 ## Overview
 
 This project takes two inputs:
